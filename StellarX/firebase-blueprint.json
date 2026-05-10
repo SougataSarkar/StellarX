@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "Discovery": {
+      "title": "Discovery",
+      "description": "A saved celestial body discovery by a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who made the discovery" },
+        "name": { "type": "string", "description": "The name of the celestial body" },
+        "type": { "type": "string", "description": "The type of the celestial body" },
+        "distance": { "type": "string", "description": "The distance from Earth" },
+        "timestamp": { "type": "object" }
+      },
+      "required": ["userId", "name", "type", "distance", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/discoveries/{discoveryId}": {
+      "schema": { "$ref": "#/entities/Discovery" },
+      "description": "Stores user discoveries"
+    }
+  }
+}

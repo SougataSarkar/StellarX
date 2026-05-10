@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Definition
+    function isValidId(id) { 
+        return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+
+    // Validation Blueprint for Discovery
+    function isValidDiscovery(data) {
+      return data.keys().hasAll(['userId', 'name', 'type', 'distance', 'timestamp']) 
+          && data.keys().size() == 5
+          && data.userId is string && data.userId == request.auth.uid
+          && data.name is string && data.name.size() > 0 && data.name.size() <= 128
+          && data.type is string && data.type.size() > 0 && data.type.size() <= 128
+          && data.distance is string && data.distance.size() > 0 && data.distance.size() <= 128
+          && data.timestamp == request.time;
+    }
+
+    match /discoveries/{discoveryId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(discoveryId) && isValidDiscovery(incoming());
+      allow update: if isSignedIn() && isValidId(discoveryId) && isValidDiscovery(incoming()) 
+          && incoming().userId == existing().userId 
+          && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'type', 'distance', 'timestamp']);
+      allow delete: if isSignedIn() && isValidId(discoveryId) && existing().userId == request.auth.uid;
+    }
+  }
+}
